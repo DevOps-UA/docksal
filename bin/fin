@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-FIN_VERSION=1.27.0
+FIN_VERSION=1.27.1
 
 # Console colors
 red='\033[0;91m'
@@ -65,7 +65,7 @@ FIN_AUTOCOMPLETE_PATH="/usr/local/bin/fin-bash-autocomplete"
 if is_windows; then
 	BABUN_WIN_HOME="$HOME"
 	# Cannot use cygpath_abs_unix here as it's being defined much later
-	HOME="/$(cygpath -m $HOME | sed 's/^\/cygdrive//' | sed 's/\([A-Z]\)\:/\l\1/')"
+	HOME="/$(cygpath -m ""$HOME"" | sed 's/^\/cygdrive//' | sed 's/\([A-Z]\)\:/\l\1/')"
 fi
 OLD_CONFIG_DIR="$HOME/.drude"
 CONFIG_DIR="$HOME/.docksal"
@@ -232,7 +232,7 @@ pwd ()
 # @param $1 file/folder
 cygpath_abs_unix ()
 {
-	echo "/$(cygpath -m $1 | sed 's/^\/cygdrive//' | sed 's/\([A-Z]\)\:/\l\1/')"
+	echo "/$(cygpath -m ""$1"" | sed 's/^\/cygdrive//' | sed 's/\([A-Z]\)\:/\l\1/')"
 }
 
 # Search for a file/directory in a directory tree upwards. Return its path.
@@ -251,7 +251,7 @@ upfind ()
 	# upfind on windows may return FAKED HOME PATH! because of that. KEEP that in mind
 	[[ "$_path" == "" ]] && _path="$HOME"
 	if is_windows; then
-		echo "$(cygpath_abs_unix ${_path})"
+		echo $(cygpath_abs_unix "$_path")
 	else
 		echo "$_path"
 	fi
@@ -316,7 +316,7 @@ get_current_relative_path ()
 	local cwd=$(pwd)
 	# On Windows pwd may return a cygwin absolute path.
 	# We need a full absolute path here (/c/Users/user/... instead of /home/user), thus the special handling.
-	is_windows && cwd=$(cygpath_abs_unix $(pwd))
+	is_windows && cwd=$(cygpath_abs_unix "$(pwd)")
 
 	# Output relative path unless we are in the project root (empty relative path)
 	if [[ "$proj_root" != "$cwd" ]]; then
@@ -1958,7 +1958,7 @@ Windows Registry Editor Version 5.00
 "Size"=dword:00000003
 EOF
 	# Update registry and restart Server and Computer Browser services.
-	winsudo "regedit /S $(cygpath -w ${tmpfile}) && net stop server /y && net start server && net start browser"
+	winsudo "regedit /S $(cygpath -w ""${tmpfile}"") && net stop server /y && net start server && net start browser"
 }
 
 # Method to create the user and SMB network share on Windows.
@@ -1971,7 +1971,7 @@ smb_share_add()
 	# Add SMB share if it does not exist.
 	if [[ "$(net share)" != *"${share_name}"*"Docksal ${share_path} drive"* ]];
 	then
-		command_share="net share ${share_name}=${share_path} /grant:${USERNAME},FULL /REMARK:\"Docksal ${share_path} drive\""
+		command_share="net share ${share_name}=${share_path} /grant:\"${USERNAME}\",FULL /REMARK:\"Docksal ${share_path} drive\""
 		echo-green "Adding docker SMB share..."
 		winsudo "$command_share"
 
@@ -2893,7 +2893,7 @@ install_tools_windows ()
 		echo-green "Preparing to update virtual machine..." && \
 		docker_machine_stop && \
 		echo "Downloading boot2docker.iso v${REQUIREMENTS_DOCKER}" && \
-		curl -fL# "$URL_BOOT2DOCKER" -o "$(cygpath $USERPROFILE)/.docker/machine/machines/$DOCKER_MACHINE_NAME/boot2docker.iso" && \
+		curl -fL# "$URL_BOOT2DOCKER" -o "$(cygpath ""${USERPROFILE}"")/.docker/machine/machines/$DOCKER_MACHINE_NAME/boot2docker.iso" && \
 		docker_machine_start
 	fi
 
@@ -3011,7 +3011,7 @@ update_virtualbox () {
 	# Download and install Win
 	is_windows && (
 		# Using cygpath -w here to get a Windows native path to the installer, so that cmd will understand it.
-		cmd /c start "$(cygpath -w $vbox_pkg)"
+		cmd /c "$(cygpath -w ""${vbox_pkg}"")"
 	)
 
 	# Wait for installation to finish
@@ -3109,7 +3109,7 @@ update_start_script_shortcut()
 	rm -f "$BABUN_HOME/docksal.bat" >/dev/null 2>&1
 	rm -f "$BABUN_HOME/docksal.ico" >/dev/null 2>&1
 	rm -f "$BABUN_HOME/tools/link_icon.vbs" >/dev/null 2>&1
-	rm -f "$(cygpath ${USERPROFILE}\Desktop\Docksal.lnk)" >/dev/null 2>&1
+	rm -f "$(cygpath ""${USERPROFILE}\Desktop\Docksal.lnk"")" >/dev/null 2>&1
 
 #	curl -kfsSL "${URL_REPO}/${DOCKSAL_VERSION}/scripts/link_icon.vbs" -o "$(cygpath $BABUN_HOME)/tools/link_icon.vbs"
 #	curl -kfsSL "${URL_REPO}/${DOCKSAL_VERSION}/scripts/docksal.bat" -o "$(cygpath $BABUN_HOME)/docksal.bat"
@@ -4230,7 +4230,7 @@ hosts_add ()
 		cp "$HOSTS_FILE" "$tmp"
 		echo "$DOCKSAL_IP $hostname" | tee -a "$tmp" >/dev/null
 		unix2dos -q "$tmp"
-		winsudo "copy /Y $(cygpath -w ${tmp}) $(cygpath -w ${HOSTS_FILE}) && erase $(cygpath -w ${tmp})"
+		winsudo "copy /Y $(cygpath -w ""${tmp}"") $(cygpath -w ""${HOSTS_FILE}"") && erase $(cygpath -w ""${tmp}"")"
 	else
 		echo "$DOCKSAL_IP $hostname" | sudo tee -a "$HOSTS_FILE" >/dev/null
 	fi
@@ -4263,7 +4263,7 @@ hosts_remove ()
 		cp "$HOSTS_FILE" "$tmp"
 		cat "$HOSTS_FILE" | grep -v "$hostname" | sudo tee "$tmp" >/dev/null
 		unix2dos -q "$tmp"
-		winsudo "copy /Y $(cygpath -w ${tmp}) $(cygpath -w ${HOSTS_FILE}) && erase $(cygpath -w ${tmp})"
+		winsudo "copy /Y $(cygpath -w ""${tmp}"") $(cygpath -w ""${HOSTS_FILE}"") && erase $(cygpath -w ""${tmp}"")"
 	else
 		cat "$HOSTS_FILE" | grep -v "$hostname" | sudo tee "$HOSTS_FILE" >/dev/null
 	fi
